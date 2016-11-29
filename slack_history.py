@@ -129,12 +129,17 @@ def parseMessages(parentDir, roomDir, messages, roomType):
 
 
 # fetch and write history for all public channels
-def getChannels(slack, dryRun):
+def getChannels(slack, ignoreChannels, dryRun):
 	channels = slack.channels.list().body['channels']
 
 	print("\nfound channels: ")
 	for channel in channels:
-		print(channel['name'])
+		cName = channel['name']
+		if cName in ignoreChannels:
+			print("-- Ignoring {0}".format(cName))
+			channels.remove(channel)
+		else:
+			print(cName)
 
 	if not dryRun:
 		parentDir = "channel"
@@ -271,6 +276,8 @@ if __name__ == "__main__":
 		default=False,
 		help="skip fetching history for directMessages")
 
+        parser.add_argument('--ignoreChannels', nargs='*', help='skips a list of channels')
+
 	args = parser.parse_args()
 
 	slack = Slacker(args.token)
@@ -287,7 +294,7 @@ if __name__ == "__main__":
 		dumpChannelFile(slack)
 
 	if not args.skipChannels:
-		getChannels(slack, dryRun)
+		getChannels(slack, args.ignoreChannels, dryRun)
 
 	if not args.skipPrivateChannels:
 		getPrivateChannels(slack, dryRun)
